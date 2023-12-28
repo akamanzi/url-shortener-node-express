@@ -1,4 +1,7 @@
 require('dotenv').config();
+var dns = require('dns');
+let urlMapper = require('./urlshortener')
+const bodyParser = require('body-parser');
 const express = require('express');
 const cors = require('cors');
 const app = express();
@@ -15,8 +18,29 @@ app.get('/', function(req, res) {
 });
 
 // Your first API endpoint
-app.get('/api/hello', function(req, res) {
-  res.json({ greeting: 'hello API' });
+app.use(bodyParser.urlencoded({extended : false}));
+app.get('/api/shorturl/:short_url', function(req, res) {
+  full_url = urlMapper.getFullUrl(req.params.short_url)
+  if (full_url != "Not Found") {
+    res.redirect("http://"+full_url);
+  }
+});
+app.post('/api/shorturl', function(req, res) {
+  dns.lookup(req.body.url, function (err, addresses, family) {
+  if (err) {
+    res.json({
+      'error': 'invalid url'
+    })
+  }
+  else {
+    res.json(
+      { "origal_url": req.body.url,
+        "short_url": urlMapper.urlMapper(req.body.url)
+      }
+      );
+  }
+  });
+      
 });
 
 app.listen(port, function() {
